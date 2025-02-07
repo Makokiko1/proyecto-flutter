@@ -1,5 +1,8 @@
 import 'package:sqflite/sqflite.dart';
+// ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -24,20 +27,51 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
+        username TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL
       )
     ''');
   }
 
-  // Método para registrar un nuevo usuario
   Future<void> insertUser(String username, String password) async {
     final db = await database;
+    final hashedPassword = _hashPassword(password);
 
     await db.insert(
       'users',
-      {'username': username, 'password': password},
-      conflictAlgorithm: ConflictAlgorithm.replace, // Si el usuario ya existe, reemplázalo
+      {'username': username, 'password': hashedPassword},
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  Future<bool> userExists(String username) async {
+    final db = await database;
+    final result = await db.query('users', where: 'username = ?', whereArgs: [username]);
+    return result.isNotEmpty;
+  }
+
+  Future<Map<String, dynamic>?> getUser(String username) async {
+    final db = await database;
+    final result = await db.query('users', where: 'username = ?', whereArgs: [username]);
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  Future<int?> authenticateUser(String username, String password) async {
+    final db = await database;
+    final hashedPassword = _hashPassword(password);
+    final result = await db.query(
+      'users',
+      where: 'username = ? AND password = ?',
+      whereArgs: [username, hashedPassword],
+    );
+
+    if (result.isNotEmpty) {
+      return result.first['id'] as int; // Retorna el ID del usuario autenticado
+    }
+    return null;
+  }
+
+  String _hashPassword(String password) {
+    return sha256.convert(utf8.encode(password)).toString();
   }
 }

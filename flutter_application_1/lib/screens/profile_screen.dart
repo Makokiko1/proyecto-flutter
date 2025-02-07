@@ -1,62 +1,83 @@
 import 'package:flutter/material.dart';
-import 'databaseservice.dart';
+import 'package:flutter_application_1/screens/bookservice.dart';
 
 class ProfileScreen extends StatefulWidget {
+  final int userId;
+
+  const ProfileScreen({super.key, required this.userId});
+
   @override
+  // ignore: library_private_types_in_public_api
   _ProfileScreenState createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final DatabaseService _databaseService = DatabaseService();
-  List<Map<String, dynamic>> books = [];
-
-  // Obtener los libros guardados desde la base de datos
-  Future<void> getBooks() async {
-    try {
-      final bookList = await _databaseService.getBooks();
-      setState(() {
-        books = bookList;
-      });
-      print("Books cargados correctamente: $books");
-    } catch (e) {
-      print("Error al cargar los libros: $e");
-    }
-  }
-
-  // Eliminar un libro de "Mis lecturas" usando su ID
-  Future<void> deleteBook(int id) async {
-    try {
-      await _databaseService.deleteBook(id);
-      getBooks(); // Actualizar lista de libros después de eliminar
-    } catch (e) {
-      print("Error al eliminar el libro: $e");
-    }
-  }
+  List<Map<String, dynamic>> userBooks = [];
 
   @override
   void initState() {
     super.initState();
-    getBooks(); // Cargar los libros al iniciar la pantalla
+    fetchUserBooks();
+  }
+
+  Future<void> fetchUserBooks() async {
+    final books = await BookService().getBooksByUser(widget.userId);
+    setState(() {
+      userBooks = books;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Mis lecturas")),
-      body: books.isEmpty
-          ? Center(child: Text("No hay libros guardados")) // Indicador si no hay libros
+      appBar: AppBar(
+        title: const Text("Mis Lecturas"),
+        backgroundColor: Colors.blue[900],
+        centerTitle: true,
+      ),
+      backgroundColor: Colors.blue[50],
+      body: userBooks.isEmpty
+          ? const Center(child: Text("No tienes libros en tus lecturas."))
           : ListView.builder(
-              itemCount: books.length,
+              itemCount: userBooks.length,
               itemBuilder: (context, index) {
-                final book = books[index];
-                return ListTile(
-                  title: Text(book['title'] ?? 'Sin título'),
-                  subtitle: Text(book['authors'] ?? 'Autor desconocido'),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () {
-                      deleteBook(book['id']); // Eliminar libro
-                    },
+                final book = userBooks[index];
+                return Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: book['imageUrl'] != null && book['imageUrl'].isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              book['imageUrl'],
+                              width: 60,
+                              height: 90,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Container(
+                            width: 60,
+                            height: 90,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.book, size: 40, color: Colors.black54),
+                          ),
+                    title: Text(
+                      book['title'],
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    subtitle: Text(book['authors'], style: const TextStyle(color: Colors.black54)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () async {
+                        await BookService().deleteBook(book['id']);
+                        fetchUserBooks(); // Actualiza la lista
+                      },
+                    ),
                   ),
                 );
               },

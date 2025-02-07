@@ -1,4 +1,8 @@
+// ignore: file_names
+
+
 import 'package:sqflite/sqflite.dart';
+// ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
 class DatabaseService {
@@ -26,6 +30,7 @@ class DatabaseService {
   Future<Database> initDatabase() async {
     String path = join(await getDatabasesPath(), 'libros.db');
     return openDatabase(path, onCreate: (db, version) {
+      // ignore: avoid_print
       print("Creando la tabla 'libros' en la base de datos.");
       return db.execute(
         'CREATE TABLE libros(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, authors TEXT)',
@@ -37,14 +42,17 @@ class DatabaseService {
   Future<void> addBook(Map<String, dynamic> book) async {
     try {
       final db = await database;
+      // ignore: avoid_print
       print("Añadiendo libro a la base de datos: $book");
       await db.insert(
         'libros',
         book,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+      // ignore: avoid_print
       print("Libro añadido correctamente: $book");
     } catch (e) {
+      // ignore: avoid_print
       print("Error al añadir el libro: $e");
     }
   }
@@ -54,9 +62,11 @@ class DatabaseService {
     try {
       final db = await database;
       final books = await db.query('libros');
+      // ignore: avoid_print
       print("Libros recuperados: $books");
       return books;
     } catch (e) {
+      // ignore: avoid_print
       print("Error al obtener los libros: $e");
       return [];
     }
@@ -71,8 +81,10 @@ class DatabaseService {
         where: 'id = ?',
         whereArgs: [id],
       );
+      // ignore: avoid_print
       print("Libro con id $id eliminado");
     } catch (e) {
+      // ignore: avoid_print
       print("Error al eliminar el libro: $e");
     }
   }

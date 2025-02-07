@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';  // Importar LoginScreen desde la carpeta screens
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -13,7 +15,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: LoginScreen(),  // Establecer LoginScreen como la pantalla principal
+      home: const LoginScreen(),  // Establecer LoginScreen como la pantalla principal
     );
   }
 }

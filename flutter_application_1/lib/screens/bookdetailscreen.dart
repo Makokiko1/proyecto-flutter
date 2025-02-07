@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'databaseservice.dart';
+import 'package:flutter_application_1/screens/bookservice.dart';
 
 class BookDetailScreen extends StatelessWidget {
   final Map<String, dynamic> book;
-  final DatabaseService dbService = DatabaseService();
+  final int userId;
 
-  BookDetailScreen({required this.book});
+  const BookDetailScreen({super.key, required this.book, required this.userId});
+
+  Future<void> addToMyBooks(BuildContext context) async {
+    final title = book['volumeInfo']['title'] ?? 'Sin título';
+    final authors = book['volumeInfo']['authors']?.join(', ') ?? 'Autor desconocido';
+    final imageUrl = book['volumeInfo']['imageLinks']?['thumbnail'] ?? '';
+
+    try {
+      await BookService().addBook(title, authors, imageUrl, userId);
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Libro añadido a Mis lecturas.')),
+      );
+    } catch (e) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al añadir el libro: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +36,10 @@ class BookDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        backgroundColor: Colors.blue[900],
+        centerTitle: true,
       ),
+      backgroundColor: Colors.blue[50],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -27,71 +48,50 @@ class BookDetailScreen extends StatelessWidget {
             Row(
               children: [
                 if (imageUrl.isNotEmpty)
-                  Image.network(imageUrl, width: 100, height: 150, fit: BoxFit.cover),
-                SizedBox(width: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(imageUrl, width: 100, height: 150, fit: BoxFit.cover),
+                  ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'Autores: $authors',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: () async {
-                    // Crear el objeto de libro para añadirlo a la base de datos
-                    final bookData = {
-                      'title': title,
-                      'authors': authors,
-                    };
-
-                    // Añadir el libro a "Mis lecturas"
-                    try {
-                      final db = await dbService.database;
-                      int result = await db.insert(
-                        'libros',
-                        bookData,
-                        conflictAlgorithm: ConflictAlgorithm.replace,
-                      );
-
-                      if (result > 0) {
-                        // Mostrar mensaje de éxito solo si la inserción fue exitosa
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Libro añadido a Mis lecturas')),
-                        );
-                      } else {
-                        // Mostrar mensaje de error si no se insertó correctamente
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error al añadir el libro')),
-                        );
-                      }
-                    } catch (e) {
-                      // Manejo de errores al interactuar con la base de datos
-                      print("Error al añadir el libro: $e");
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error al añadir el libro')),
-                      );
-                    }
-                  },
-                ),
               ],
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Sinopsis:',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(description),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: () => addToMyBooks(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[900],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Añadir a Mis lecturas'),
+              ),
+            ),
           ],
         ),
       ),
