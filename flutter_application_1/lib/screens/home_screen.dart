@@ -1,16 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_application_1/screens/bookdetailscreen.dart';
-import 'search_screen.dart';
-import 'profile_screen.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/screens/bookservice.dart';
-import 'login_screen.dart'; // Importamos la pantalla de login
+import 'package:flutter/material.dart'; // Importa el paquete de Material Design para Flutter
+import 'package:flutter_application_1/screens/bookdetailscreen.dart'; // Importa la pantalla de detalles del libro
+import 'search_screen.dart'; // Importa la pantalla de búsqueda
+import 'profile_screen.dart'; // Importa la pantalla de perfil
+import 'dart:convert'; // Importa el paquete para trabajar con JSON
+import 'package:http/http.dart' as http; // Importa el paquete para hacer solicitudes HTTP
+import 'package:flutter_application_1/screens/bookservice.dart'; // Importa el servicio de libros
+import 'login_screen.dart'; // Importa la pantalla de login
 
+// Observador de rutas para detectar cambios en la navegación
 final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 
 class HomeScreen extends StatefulWidget {
-  final int userId;
+  final int userId; // ID del usuario que está usando la aplicación
 
   const HomeScreen({super.key, required this.userId});
 
@@ -20,50 +21,58 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
-  List<String> userAuthors = [];
-  Future<List<dynamic>>? topRatedBooks;
+  List<String> userAuthors = []; // Lista de autores favoritos del usuario
+  Future<List<dynamic>>? topRatedBooks; // Futuro para almacenar los libros mejor valorados
 
   @override
   void initState() {
     super.initState();
-    fetchUserAuthors();
+    fetchUserAuthors(); // Llama a la función para obtener los autores favoritos del usuario
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Suscribe el observador de rutas para detectar cambios en la navegación
     routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
+    // Cancela la suscripción del observador de rutas al destruir la pantalla
     routeObserver.unsubscribe(this);
     super.dispose();
   }
 
   @override
   void didPopNext() {
-    fetchUserAuthors(); // Actualiza libros al volver a HomeScreen
+    // Actualiza los autores favoritos al volver a la pantalla de inicio
+    fetchUserAuthors();
   }
 
+  // Función para obtener los autores favoritos del usuario
   Future<void> fetchUserAuthors() async {
     final books = await BookService().getBooksByUser(widget.userId);
     setState(() {
+      // Extrae los autores de los libros y los almacena en una lista sin duplicados
       userAuthors = books
           .map<String>((book) => book['authors'] as String)
           .toSet()
           .toList();
+      // Actualiza la lista de libros mejor valorados
       topRatedBooks = fetchTopRatedBooks();
     });
   }
 
+  // Función para obtener los libros mejor valorados de los autores favoritos
   Future<List<dynamic>> fetchTopRatedBooks() async {
     if (userAuthors.isEmpty) {
-      return [];
+      return []; // Retorna una lista vacía si no hay autores favoritos
     }
 
     List<dynamic> filteredBooks = [];
     for (String author in userAuthors) {
+      // Realiza una solicitud HTTP para obtener libros del autor
       final response = await http.get(
         Uri.parse('https://www.googleapis.com/books/v1/volumes?q=inauthor:$author&maxResults=5'),
       );
@@ -71,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['items'] != null) {
+          // Agrega los libros obtenidos a la lista
           filteredBooks.addAll(data['items']);
         }
       }
@@ -78,10 +88,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     return filteredBooks;
   }
 
+  // Función para cerrar sesión
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()), 
+      MaterialPageRoute(builder: (context) => const LoginScreen()), // Navega a la pantalla de login
       (Route<dynamic> route) => false, // Elimina todas las pantallas previas
     );
   }
@@ -90,25 +101,26 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Encuentra tu Viaje"),
-        backgroundColor: Colors.blue[900], // Azul oscuro
-        centerTitle: true,
+        title: const Text("Encuentra tu Viaje"), // Título de la barra superior
+        backgroundColor: Colors.blue[900], // Color de fondo de la barra
+        centerTitle: true, // Centra el título en la barra
       ),
       drawer: Drawer(
         child: Container(
-          color: Colors.blue[50], // Fondo azul clarito
+          color: Colors.blue[50], // Color de fondo del menú lateral
           child: ListView(
             padding: EdgeInsets.zero,
             children: <Widget>[
+              // Encabezado del menú lateral
               DrawerHeader(
                 decoration: BoxDecoration(
-                  color: Colors.blue[900], // Azul oscuro
+                  color: Colors.blue[900], // Color de fondo del encabezado
                 ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.travel_explore, color: Colors.white, size: 60),
+                    Icon(Icons.travel_explore, color: Colors.white, size: 60), // Ícono del encabezado
                     SizedBox(height: 10),
                     Text(
                       'Menú de Opciones',
@@ -118,11 +130,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   ],
                 ),
               ),
+              // Elementos del menú lateral
               _buildDrawerItem(Icons.search, 'Buscar Libros', () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SearchScreen(userId: widget.userId),
+                    builder: (context) => SearchScreen(userId: widget.userId), // Navega a la pantalla de búsqueda
                   ),
                 );
               }),
@@ -130,17 +143,17 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ProfileScreen(userId: widget.userId),
+                    builder: (context) => ProfileScreen(userId: widget.userId), // Navega a la pantalla de perfil
                   ),
                 );
               }),
-              const Divider(),
-              _buildDrawerItem(Icons.exit_to_app, 'Cerrar Sesión', _logout, color: Colors.red),
+              const Divider(), // Línea divisoria
+              _buildDrawerItem(Icons.exit_to_app, 'Cerrar Sesión', _logout, color: Colors.red), // Opción para cerrar sesión
             ],
           ),
         ),
       ),
-      backgroundColor: Colors.blue[50], // Fondo azul clarito
+      backgroundColor: Colors.blue[50], // Color de fondo de la pantalla
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -158,11 +171,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 future: topRatedBooks,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator()); // Muestra un indicador de carga
                   } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
+                    return Center(child: Text('Error: ${snapshot.error}')); // Muestra un mensaje de error
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No se encontraron libros.'));
+                    return const Center(child: Text('No se encontraron libros.')); // Muestra un mensaje si no hay libros
                   } else {
                     final books = snapshot.data!;
                     return ListView.builder(
@@ -222,11 +235,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
+  // Función para construir elementos del menú lateral
   Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap, {Color color = Colors.black87}) {
     return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(title, style: TextStyle(color: color)),
-      onTap: onTap,
+      leading: Icon(icon, color: color), // Ícono del elemento
+      title: Text(title, style: TextStyle(color: color)), // Título del elemento
+      onTap: onTap, // Acción al presionar el elemento
     );
   }
 }
