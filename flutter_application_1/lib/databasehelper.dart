@@ -28,7 +28,7 @@ class DatabaseHelper {
     return openDatabase(path, version: 1, onCreate: _createDB);
   }
 
-  // Crea la estructura de la base de datos (tabla de usuarios)
+  // Crea la estructura de la base de datos (tabla de usuarios) y añade un usuario por defecto
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE users (
@@ -37,6 +37,15 @@ class DatabaseHelper {
         password TEXT NOT NULL
       )
     ''');
+
+    // Inserta el usuario por defecto con la contraseña encriptada
+    final defaultUsername = 'usuario';
+    final defaultPassword = _hashPassword('usuario'); // Encripta la contraseña
+    
+    await db.insert(
+      'users',
+      {'username': defaultUsername, 'password': defaultPassword},
+    );
   }
 
   // Inserta un usuario en la base de datos con contraseña encriptada
